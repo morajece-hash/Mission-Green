@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Mission Green</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1b6b45">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--bg:#f3f1e8;--card:#fff;--ink:#0f2a22;--mut:#5c6b63;--g:#1b6b45;--gl:#dcefe3;--a:#f2b84b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f2a22;--card:#173a2f;--ink:#f3f1e8;--mut:#9bb5a8;--g:#4caf6d;--gl:#22503f}}
+:root[data-theme="dark"]{--bg:#0f2a22;--card:#173a2f;--ink:#f3f1e8;--mut:#9bb5a8;--g:#4caf6d;--gl:#22503f}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+main{max-width:480px;margin:0 auto;padding:16px 16px 110px}
+h1{font-size:28px;margin:8px 0 2px}h2{font-size:18px;margin:20px 0 8px}p{margin:4px 0}
+.mut{color:var(--mut);font-size:14px}.card{background:var(--card);border-radius:16px;padding:16px;margin:10px 0;box-shadow:0 1px 3px #0002}
+.row{display:flex;align-items:center;gap:12px}.sp{justify-content:space-between}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.big{font-size:30px;font-weight:700;color:var(--g)}button{font:inherit;border:0;border-radius:12px;padding:10px 14px;background:var(--g);color:#fff;cursor:pointer}
+button.ghost{background:var(--gl);color:var(--ink)}button.chk{width:44px;height:44px;border-radius:50%;background:var(--gl);color:var(--ink);font-size:20px;flex:none}button.chk.on{background:var(--g);color:#fff}
+input,select{font:inherit;padding:10px;border-radius:10px;border:1px solid var(--mut);background:var(--card);color:var(--ink);max-width:100%}
+.bars{display:flex;align-items:flex-end;gap:8px;height:90px}.bars div{flex:1;text-align:center;font-size:12px;color:var(--mut)}.bars i{display:block;background:var(--g);border-radius:6px 6px 0 0;min-height:4px;margin-bottom:4px}
+.bar{height:10px;background:var(--gl);border-radius:6px;overflow:hidden;margin-top:8px}.bar b{display:block;height:100%;background:var(--g)}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);display:flex;justify-content:center;padding:8px 4px calc(8px + env(safe-area-inset-bottom,0px));box-shadow:0 -1px 4px #0003}
+nav button{flex:1;max-width:96px;background:none;color:var(--mut);padding:6px 2px;font-size:12px}nav button.on{color:var(--g);font-weight:700}nav span{display:block;font-size:22px}
+.badge{text-align:center;padding:12px 6px;border-radius:14px;background:var(--gl)}.badge.off{opacity:.4;filter:grayscale(1)}.badge span{font-size:34px;display:block}
+.tag{font-size:12px;background:var(--a);color:#0f2a22;border-radius:8px;padding:2px 8px}
+</style></head><body><main id="v"></main>
+<nav id="n"></nav>
+<script>
+var K='mission-green-v1',tab='home',S=load();
+var HAB=[
+{id:'bottle',n:'Use a reusable bottle',i:'🥤',co2:.08,w:0,e:0,x:.05},
+{id:'recycle',n:'Recycle waste',i:'♻️',co2:.3,w:0,e:0,x:.5},
+{id:'lights',n:'Turn off lights',i:'💡',co2:.1,w:0,e:.2,x:0},
+{id:'shower',n:'Take a short shower',i:'🚿',co2:.4,w:20,e:0,x:0},
+{id:'walk',n:'Walk or bike instead of car',i:'🚲',co2:2,w:0,e:0,x:0},
+{id:'plant',n:'Eat a plant-based meal',i:'🥗',co2:1.5,w:100,e:0,x:0}];
+var CH=[
+{id:'d3',t:'Daily',n:'Do 3 habits today',tg:3,f:function(){return cnt(td())}},
+{id:'w15',t:'Weekly',n:'Log 15 actions this week',tg:15,f:function(){return wk()}},
+{id:'m60',t:'Monthly',n:'Log 60 actions this month',tg:60,f:function(){return mo()}},
+{id:'g20',t:'Group',n:'Team challenge: recycle 20 times',tg:20,f:function(){return byHab('recycle')}}];
+var BD=[
+{n:'First step',i:'🌱',d:'Log 1 action',ok:function(){return tot()>=1}},
+{n:'3-day streak',i:'🔥',d:'3 days in a row',ok:function(){return best()>=3}},
+{n:'7-day streak',i:'⚡',d:'7 days in a row',ok:function(){return best()>=7}},
+{n:'Eco 25',i:'🌳',d:'25 actions',ok:function(){return tot()>=25}},
+{n:'Water saver',i:'💧',d:'Save 100 L',ok:function(){return imp().w>=100}},
+{n:'Level 3',i:'🏆',d:'Reach level 3',ok:function(){return lvl()>=3}}];
+function load(){try{var r=localStorage.getItem(K);if(r)return JSON.parse(r)}catch(e){}return{logs:{},goal:20,rem:{on:false,time:'20:00'},joined:[],custom:[],last:''}}
+function save(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}}
+function fmt(d){var m=d.getMonth()+1,x=d.getDate();return d.getFullYear()+'-'+(m<10?'0':'')+m+'-'+(x<10?'0':'')+x}
+function ad(d,n){var r=new Date(d);r.setDate(r.getDate()+n);return r}
+function td(){return fmt(new Date())}
+function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function all(){return HAB.concat(S.custom)}
+function cnt(k){return (S.logs[k]||[]).length}
+function tot(){var t=0;for(var k in S.logs)t+=S.logs[k].length;return t}
+function wk(){var t=0,d=new Date();for(var i=0;i<7;i++)t+=cnt(fmt(ad(d,-i)));return t}
+function mo(){var p=td().slice(0,7),t=0;for(var k in S.logs)if(k.indexOf(p)==0)t+=S.logs[k].length;return t}
+function byHab(id){var t=0;for(var k in S.logs)S.logs[k].forEach(function(h){if(h==id)t++});return t}
+function streak(){var d=new Date();if(!cnt(fmt(d)))d=ad(d,-1);var n=0;while(cnt(fmt(d))){n++;d=ad(d,-1)}return n}
+function best(){var ks=Object.keys(S.logs).filter(function(k){return cnt(k)}).sort(),b=0,c=0,p=null;ks.forEach(function(k){var d=new Date(k+'T00:00:00');c=(p&&fmt(ad(p,1))==k)?c+1:1;p=d;if(c>b)b=c});return b}
+function lvl(){return Math.floor(tot()*10/100)+1}
+function imp(){var r={co2:0,w:0,e:0,x:0};var A=all();for(var k in S.logs)S.logs[k].forEach(function(id){var h=A.filter(function(a){return a.id==id})[0];if(h){r.co2+=h.co2;r.w+=h.w;r.e+=h.e;r.x+=h.x}});r.trees=r.co2/21;return r}
+function f1(n){return Math.round(n*10)/10}
+function toggle(id){var k=td(),a=S.logs[k]||[],i=a.indexOf(id);if(i<0)a.push(id);else a.splice(i,1);S.logs[k]=a;if(!a.length)delete S.logs[k];save();show()}
+function ring(p){var c=251.3;return '<svg width="96" height="96" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="var(--gl)" stroke-width="10"/><circle cx="50" cy="50" r="40" fill="none" stroke="var(--g)" stroke-width="10" stroke-linecap="round" stroke-dasharray="'+c+'" stroke-dashoffset="'+(c*(1-p))+'" transform="rotate(-90 50 50)"/><text x="50" y="56" text-anchor="middle" font-size="20" font-weight="700" fill="var(--ink)">'+Math.round(p*100)+'%</text></svg>'}
+function bars(){var h='<div class="bars">',d=new Date(),dn=['Su','Mo','Tu','We','Th','Fr','Sa'];for(var i=6;i>=0;i--){var x=ad(d,-i),c=cnt(fmt(x));h+='<div><i style="height:'+Math.min(c,5)*14+'px"></i>'+dn[x.getDay()]+'</div>'}return h+'</div>'}
+function home(){var p=Math.min(1,wk()/S.goal),t=cnt(td()),s=streak();
+return '<h1>Hello! 🌿</h1><p class="mut">Small actions, big impact.</p>'+
+'<div class="card row sp"><div><b>'+(t?'Keep going!':'Start today!')+'</b><p class="mut">'+t+' action'+(t==1?'':'s')+' logged today</p></div><div style="text-align:center"><div class="big">🔥 '+s+'</div><div class="mut">Day streak</div></div></div>'+
+'<h2>Streak chart</h2><div class="card">'+bars()+'<p class="mut">Actions per day, last 7 days</p></div>'+
+'<h2>Your progress</h2><div class="card row">'+ring(p)+'<div><b>'+wk()+' of '+S.goal+' actions this week</b><p class="mut">Weekly goal. Change it in Habits.</p></div></div>'+
+'<h2>Reminders</h2><div class="card"><div class="row sp"><b>Daily push reminder</b><button class="'+(S.rem.on?'':'ghost')+'" data-a="rem">'+(S.rem.on?'On':'Off')+'</button></div><div class="row" style="margin-top:8px"><input type="time" id="rt" value="'+S.rem.time+'"><span class="mut">Choose reusable over single-use. Small choices, big change!</span></div><p class="mut">Notifications show while the app is open in this demo.</p></div>'+
+'<div class="row" style="margin-top:16px"><button class="ghost" data-a="demo">Load demo data</button><button class="ghost" data-a="clear">Clear all data</button></div>'}
+function habits(){var h='<h1>Habit tracker</h1><p class="mut">Tap the circle when you do a habit today.</p>',A=all(),l=S.logs[td()]||[];
+A.forEach(function(a){var on=l.indexOf(a.id)>=0;h+='<div class="card row"><button class="chk '+(on?'on':'')+'" data-a="tg" data-id="'+a.id+'">'+(on?'✓':a.i||'🌿')+'</button><div><b>'+esc(a.n)+'</b><p class="mut">Done '+byHab(a.id)+' times</p></div></div>'});
+return h+'<h2>Set a weekly goal</h2><div class="card row"><select id="gs">'+[10,15,20,25,30].map(function(g){return '<option'+(g==S.goal?' selected':'')+'>'+g+'</option>'}).join('')+'</select><span>actions per week</span></div><h2>Add your own habit</h2><div class="card row"><input id="nh" placeholder="e.g. Compost food scraps" style="flex:1"><button data-a="add">Add</button></div>'}
+function chal(){var h='<h1>Challenges</h1><p class="mut">Daily, weekly, monthly and group.</p>';
+CH.forEach(function(c){var j=S.joined.indexOf(c.id)>=0,v=Math.min(c.tg,c.f());h+='<div class="card"><div class="row sp"><span class="tag">'+c.t+'</span><button class="'+(j?'ghost':'')+'" data-a="join" data-id="'+c.id+'">'+(j?'Joined':'Join')+'</button></div><p><b>'+c.n+'</b></p>'+(j?'<div class="bar"><b style="width:'+(v/c.tg*100)+'%"></b></div><p class="mut">'+v+' / '+c.tg+(v>=c.tg?' Complete! 🎉':'')+'</p>':'')+'</div>'});
+return h+'<p class="mut">Group totals are for this device in the prototype. Sharing across phones is our next step.</p>'}
+function rew(){var pts=tot()*10,h='<h1>Rewards</h1><div class="card row sp"><div><b>Level '+lvl()+'</b><p class="mut">'+pts+' points. 10 points per action.</p></div><span style="font-size:40px">🏆</span></div><div class="bar"><b style="width:'+(pts%100)+'%"></b></div><h2>Badges</h2><div class="grid">';
+BD.forEach(function(b){h+='<div class="badge '+(b.ok()?'':'off')+'"><span>'+b.i+'</span><b>'+b.n+'</b><p class="mut">'+b.d+'</p></div>'});return h+'</div>'}
+function impact(){var r=imp();return '<h1>Impact dashboard</h1><p class="mut">Your savings by action.</p><div class="grid"><div class="card"><div class="big">🌳 '+f1(r.trees)+'</div><p class="mut">Trees saved</p></div><div class="card"><div class="big">💧 '+Math.round(r.w)+' L</div><p class="mut">Water saved</p></div><div class="card"><div class="big">⚡ '+f1(r.e)+' kWh</div><p class="mut">Energy saved</p></div><div class="card"><div class="big">🗑️ '+f1(r.x)+' kg</div><p class="mut">Waste avoided</p></div></div><h2>By habit</h2><div class="card">'+all().map(function(a){return '<div class="row sp"><span>'+(a.i||'🌿')+' '+esc(a.n)+'</span><b>'+byHab(a.id)+'x</b></div>'}).join('')+'</div><p class="mut">Estimates for demonstration. Each habit uses a simple factor (for example, trees saved is CO₂ avoided divided by about 21 kg a tree absorbs per year). Our next step is to replace them with values from trusted sources.</p>'}
+function show(){var V={home:home,habits:habits,chal:chal,rew:rew,impact:impact};document.getElementById('v').innerHTML=V[tab]();
+var T=[['home','🏠','Home'],['habits','✅','Habits'],['chal','🎯','Challenges'],['rew','🏆','Rewards'],['impact','🌍','Impact']];
+document.getElementById('n').innerHTML=T.map(function(t){return '<button data-a="tab" data-id="'+t[0]+'" class="'+(tab==t[0]?'on':'')+'"><span>'+t[1]+'</span>'+t[2]+'</button>'}).join('')}
+function demo(){S.logs={};S.goal=24;var A=HAB.map(function(h){return h.id});for(var i=0;i<12;i++){var n=i%2?2:3,a=[];for(var j=0;j<n;j++)a.push(A[(i+j)%A.length]);S.logs[fmt(ad(new Date(),-i))]=a}save();show()}
+document.addEventListener('click',function(e){var b=e.target.closest('[data-a]');if(!b)return;var a=b.dataset.a,id=b.dataset.id;
+if(a=='tab'){tab=id;show();window.scrollTo(0,0)}else if(a=='tg')toggle(id);else if(a=='demo')demo();else if(a=='clear'){S={logs:{},goal:20,rem:{on:false,time:'20:00'},joined:[],custom:[],last:''};save();show()}
+else if(a=='join'){var i=S.joined.indexOf(id);if(i<0)S.joined.push(id);else S.joined.splice(i,1);save();show()}
+else if(a=='add'){var v=document.getElementById('nh').value.trim();if(v){S.custom.push({id:'c'+Date.now(),n:v,i:'🌿',co2:.1,w:0,e:0,x:0});save();show()}}
+else if(a=='rem'){S.rem.on=!S.rem.on;if(S.rem.on){try{Notification.requestPermission()}catch(x){}}save();show()}});
+document.addEventListener('change',function(e){if(e.target.id=='gs'){S.goal=+e.target.value;save();show()}if(e.target.id=='rt'){S.rem.time=e.target.value;save()}});
+setInterval(function(){try{if(!S.rem.on)return;var d=new Date(),hm=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);if(hm==S.rem.time&&S.last!=td()){S.last=td();save();if(Notification.permission=='granted')new Notification('Mission Green',{body:'Choose reusable over single-use. Small choices, big change!'});else alert('Mission Green reminder: Choose reusable over single-use!')}}catch(x){}},20000);
+show();
+try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
+</script></body></html>
