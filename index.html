@@ -20,13 +20,15 @@ input,select{font:inherit;padding:10px;border-radius:10px;border:1px solid var(-
 .bars{display:flex;align-items:flex-end;gap:8px;height:90px}.bars div{flex:1;text-align:center;font-size:12px;color:var(--mut)}.bars i{display:block;background:var(--g);border-radius:6px 6px 0 0;min-height:4px;margin-bottom:4px}
 .bar{height:10px;background:var(--gl);border-radius:6px;overflow:hidden;margin-top:8px}.bar b{display:block;height:100%;background:var(--g)}
 nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);display:flex;justify-content:center;padding:8px 4px calc(8px + env(safe-area-inset-bottom,0px));box-shadow:0 -1px 4px #0003}
-nav button{flex:1;max-width:96px;background:none;color:var(--mut);padding:6px 2px;font-size:12px}nav button.on{color:var(--g);font-weight:700}nav span{display:block;font-size:22px}
+nav button{flex:1;max-width:80px;background:none;color:var(--mut);padding:6px 2px;font-size:12px}nav button.on{color:var(--g);font-weight:700}nav span{display:block;font-size:22px}
 .badge{text-align:center;padding:12px 6px;border-radius:14px;background:var(--gl)}.badge.off{opacity:.4;filter:grayscale(1)}.badge span{font-size:34px;display:block}
 .tag{font-size:12px;background:var(--a);color:#0f2a22;border-radius:8px;padding:2px 8px}
 </style></head><body><main id="v"></main>
 <nav id="n"></nav>
 <script>
-var K='mission-green-v1',tab='home',S=load();
+var ENDPOINT='PASTE_YOUR_WEB_APP_URL_HERE';
+var K='mission-green-v1',tab='home',S=load(),flushing=false,rate=0;
+S.q=S.q||[];S.auth=S.auth||null;S.nick=S.nick||'';S.fam=S.fam||'';S.consent=S.consent||false;S.uid=S.uid||('u'+Math.random().toString(36).slice(2,10));
 var HAB=[
 {id:'bottle',n:'Use a reusable bottle',i:'🥤',co2:.08,w:0,e:0,x:.05},
 {id:'recycle',n:'Recycle waste',i:'♻️',co2:.3,w:0,e:0,x:.5},
@@ -63,11 +65,11 @@ function best(){var ks=Object.keys(S.logs).filter(function(k){return cnt(k)}).so
 function lvl(){return Math.floor(tot()*10/100)+1}
 function imp(){var r={co2:0,w:0,e:0,x:0};var A=all();for(var k in S.logs)S.logs[k].forEach(function(id){var h=A.filter(function(a){return a.id==id})[0];if(h){r.co2+=h.co2;r.w+=h.w;r.e+=h.e;r.x+=h.x}});r.trees=r.co2/21;return r}
 function f1(n){return Math.round(n*10)/10}
-function toggle(id){var k=td(),a=S.logs[k]||[],i=a.indexOf(id);if(i<0)a.push(id);else a.splice(i,1);S.logs[k]=a;if(!a.length)delete S.logs[k];save();show()}
+function toggle(id){var k=td(),a=S.logs[k]||[],i=a.indexOf(id);if(i<0)a.push(id);else a.splice(i,1);S.logs[k]=a;if(!a.length)delete S.logs[k];ev({type:'habit',habit:id,action:i<0?'done':'undo'});save();show()}
 function ring(p){var c=251.3;return '<svg width="96" height="96" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="var(--gl)" stroke-width="10"/><circle cx="50" cy="50" r="40" fill="none" stroke="var(--g)" stroke-width="10" stroke-linecap="round" stroke-dasharray="'+c+'" stroke-dashoffset="'+(c*(1-p))+'" transform="rotate(-90 50 50)"/><text x="50" y="56" text-anchor="middle" font-size="20" font-weight="700" fill="var(--ink)">'+Math.round(p*100)+'%</text></svg>'}
 function bars(){var h='<div class="bars">',d=new Date(),dn=['Su','Mo','Tu','We','Th','Fr','Sa'];for(var i=6;i>=0;i--){var x=ad(d,-i),c=cnt(fmt(x));h+='<div><i style="height:'+Math.min(c,5)*14+'px"></i>'+dn[x.getDay()]+'</div>'}return h+'</div>'}
 function home(){var p=Math.min(1,wk()/S.goal),t=cnt(td()),s=streak();
-return '<h1>Hello! 🌿</h1><p class="mut">Small actions, big impact.</p>'+
+return '<h1>Hello! 🌿</h1><p class="mut">Small actions, big impact.</p>'+(S.auth?'':'<div class="card"><b>Join the pilot</b><p class="mut">Sign in on the Me tab to share your progress and feedback.</p></div>')+
 '<div class="card row sp"><div><b>'+(t?'Keep going!':'Start today!')+'</b><p class="mut">'+t+' action'+(t==1?'':'s')+' logged today</p></div><div style="text-align:center"><div class="big">🔥 '+s+'</div><div class="mut">Day streak</div></div></div>'+
 '<h2>Streak chart</h2><div class="card">'+bars()+'<p class="mut">Actions per day, last 7 days</p></div>'+
 '<h2>Your progress</h2><div class="card row">'+ring(p)+'<div><b>'+wk()+' of '+S.goal+' actions this week</b><p class="mut">Weekly goal. Change it in Habits.</p></div></div>'+
@@ -82,17 +84,42 @@ return h+'<p class="mut">Group totals are for this device in the prototype. Shar
 function rew(){var pts=tot()*10,h='<h1>Rewards</h1><div class="card row sp"><div><b>Level '+lvl()+'</b><p class="mut">'+pts+' points. 10 points per action.</p></div><span style="font-size:40px">🏆</span></div><div class="bar"><b style="width:'+(pts%100)+'%"></b></div><h2>Badges</h2><div class="grid">';
 BD.forEach(function(b){h+='<div class="badge '+(b.ok()?'':'off')+'"><span>'+b.i+'</span><b>'+b.n+'</b><p class="mut">'+b.d+'</p></div>'});return h+'</div>'}
 function impact(){var r=imp();return '<h1>Impact dashboard</h1><p class="mut">Your savings by action.</p><div class="grid"><div class="card"><div class="big">🌳 '+f1(r.trees)+'</div><p class="mut">Trees saved</p></div><div class="card"><div class="big">💧 '+Math.round(r.w)+' L</div><p class="mut">Water saved</p></div><div class="card"><div class="big">⚡ '+f1(r.e)+' kWh</div><p class="mut">Energy saved</p></div><div class="card"><div class="big">🗑️ '+f1(r.x)+' kg</div><p class="mut">Waste avoided</p></div></div><h2>By habit</h2><div class="card">'+all().map(function(a){return '<div class="row sp"><span>'+(a.i||'🌿')+' '+esc(a.n)+'</span><b>'+byHab(a.id)+'x</b></div>'}).join('')+'</div><p class="mut">Estimates for demonstration. Each habit uses a simple factor (for example, trees saved is CO₂ avoided divided by about 21 kg a tree absorbs per year). Our next step is to replace them with values from trusted sources.</p>'}
-function show(){var V={home:home,habits:habits,chal:chal,rew:rew,impact:impact};document.getElementById('v').innerHTML=V[tab]();
-var T=[['home','🏠','Home'],['habits','✅','Habits'],['chal','🎯','Challenges'],['rew','🏆','Rewards'],['impact','🌍','Impact']];
+function post(o,cb){try{fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(o)}).then(function(r){return r.json()}).then(cb).catch(function(){cb(null)})}catch(x){cb(null)}}
+function ev(o){if(!S.auth)return;o.nick=S.auth.nick;o.fam=S.fam;o.date=td();o.ts=new Date().toISOString();S.q.push(o);save();flush()}
+function flush(){if(ENDPOINT.indexOf('http')!=0||!S.auth||!S.q.length||flushing)return;flushing=true;var b=S.q.slice();post({a:'events',uid:S.auth.uid,token:S.auth.token,events:b},function(r){flushing=false;if(r&&r.ok){S.q=S.q.slice(b.length);save();if(tab=='me')show()}else if(r&&r.auth){S.auth=null;save();if(tab=='me')show()}})}
+function inp(id,ph,v,t){return '<p><input id="'+id+'" type="'+(t||'text')+'" placeholder="'+ph+'" value="'+esc(v||'')+'" style="width:100%"></p>'}
+function me(){var on=ENDPOINT.indexOf('http')==0,h='<h1>Me</h1>';
+if(S.auth){h+='<div class="card"><b>Signed in</b><p class="mut">'+esc(S.auth.nick)+' ('+esc(S.auth.email||'')+')</p><button class="ghost" data-a="out">Sign out</button></div><div class="card"><b>How is the app working for you?</b><div class="row" id="rt5" style="margin:10px 0">'+[1,2,3,4,5].map(function(n){return '<button class="chk" data-a="rate" data-id="'+n+'">'+n+'</button>'}).join('')+'</div><p class="mut">1 = needs work, 5 = great</p><textarea id="fbt" rows="3" placeholder="What did you like? What should we change?" style="width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--mut);background:var(--card);color:var(--ink)"></textarea><p><button data-a="fb">Send feedback</button> <span id="fbm" class="mut"></span></p></div><p class="mut">Sync: '+(on?'connected':'not connected yet')+'. Waiting to upload: '+S.q.length+'.</p>';return h}
+h+='<p class="mut">Join our pilot to share progress and feedback. The app works without signing in.</p>';
+h+='<div class="card"><b>1. Get a login code</b><p class="mut">Parents: enter your email and we will send a code. Please use a nickname for your child, not a real name.</p>'+inp('em','Parent email','','email')+inp('nk','Nickname','')+inp('fm','Group code (optional)',S.fam)+'<label style="display:flex;gap:10px;align-items:flex-start;margin:10px 0"><input type="checkbox" id="cons" style="width:22px;height:22px;flex:none"><span class="mut">I am the parent and I agree to share habit activity and feedback with the Mission Green team. My email is used only to send login codes. No real names, locations or phone numbers are collected.</span></label><button data-a="req">Email me a login code</button><p id="m1" class="mut"></p></div>';
+h+='<div class="card"><b>2. Sign in</b>'+inp('em2','Parent email','','email')+'<p><input id="cd" placeholder="Login code" autocapitalize="characters" style="width:100%;text-transform:uppercase"></p><button data-a="login">Sign in</button><p id="m2" class="mut"></p></div>';
+return h}
+function show(){var V={home:home,habits:habits,chal:chal,rew:rew,impact:impact,me:me};document.getElementById('v').innerHTML=V[tab]();
+var T=[['home','🏠','Home'],['habits','✅','Habits'],['chal','🎯','Challenges'],['rew','🏆','Rewards'],['impact','🌍','Impact'],['me','👤','Me']];
 document.getElementById('n').innerHTML=T.map(function(t){return '<button data-a="tab" data-id="'+t[0]+'" class="'+(tab==t[0]?'on':'')+'"><span>'+t[1]+'</span>'+t[2]+'</button>'}).join('')}
 function demo(){S.logs={};S.goal=24;var A=HAB.map(function(h){return h.id});for(var i=0;i<12;i++){var n=i%2?2:3,a=[];for(var j=0;j<n;j++)a.push(A[(i+j)%A.length]);S.logs[fmt(ad(new Date(),-i))]=a}save();show()}
 document.addEventListener('click',function(e){var b=e.target.closest('[data-a]');if(!b)return;var a=b.dataset.a,id=b.dataset.id;
-if(a=='tab'){tab=id;show();window.scrollTo(0,0)}else if(a=='tg')toggle(id);else if(a=='demo')demo();else if(a=='clear'){S={logs:{},goal:20,rem:{on:false,time:'20:00'},joined:[],custom:[],last:''};save();show()}
+if(a=='tab'){tab=id;show();window.scrollTo(0,0)}else if(a=='tg')toggle(id);else if(a=='demo')demo();else if(a=='clear'){S.logs={};S.goal=20;S.joined=[];S.custom=[];save();show()}
 else if(a=='join'){var i=S.joined.indexOf(id);if(i<0)S.joined.push(id);else S.joined.splice(i,1);save();show()}
 else if(a=='add'){var v=document.getElementById('nh').value.trim();if(v){S.custom.push({id:'c'+Date.now(),n:v,i:'🌿',co2:.1,w:0,e:0,x:0});save();show()}}
 else if(a=='rem'){S.rem.on=!S.rem.on;if(S.rem.on){try{Notification.requestPermission()}catch(x){}}save();show()}});
 document.addEventListener('change',function(e){if(e.target.id=='gs'){S.goal=+e.target.value;save();show()}if(e.target.id=='rt'){S.rem.time=e.target.value;save()}});
 setInterval(function(){try{if(!S.rem.on)return;var d=new Date(),hm=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);if(hm==S.rem.time&&S.last!=td()){S.last=td();save();if(Notification.permission=='granted')new Notification('Mission Green',{body:'Choose reusable over single-use. Small choices, big change!'});else alert('Mission Green reminder: Choose reusable over single-use!')}}catch(x){}},20000);
+function val(id){var x=document.getElementById(id);return x?x.value.trim():''}
+function say(id,t){var x=document.getElementById(id);if(x)x.textContent=t}
+document.addEventListener('click',function(e){var b=e.target.closest('[data-a]');if(!b)return;var a=b.dataset.a;
+if(a=='rate'){rate=+b.dataset.id;var q=document.querySelectorAll('#rt5 .chk');for(var i=0;i<q.length;i++)q[i].classList.toggle('on',i<rate)}
+else if(a=='req'){var em=val('em').toLowerCase(),nk=val('nk').slice(0,30),fm=val('fm').slice(0,10);
+if(ENDPOINT.indexOf('http')!=0){say('m1','Sign-in is not set up yet.');return}
+if(em.indexOf('@')<1||!nk){say('m1','Please enter a valid email and a nickname.');return}
+if(!document.getElementById('cons').checked){say('m1','Please tick the parent agreement.');return}
+S.fam=fm;save();say('m1','Sending...');
+post({a:'request',email:em,nick:nk,fam:fm,consent:true},function(r){if(r&&r.ok){say('m1','If that email is valid, a code is on its way. Check your inbox and spam folder.');var x=document.getElementById('em2');if(x)x.value=em}else say('m1',r&&r.busy?'We are busy. Please try again tomorrow.':'Something went wrong. Please check the email and try again.')})}
+else if(a=='login'){var em=val('em2').toLowerCase(),cd=val('cd');if(!em||!cd){say('m2','Enter your email and code.');return}say('m2','Signing in...');
+post({a:'login',email:em,code:cd},function(r){if(r&&r.ok){S.auth={uid:r.uid,token:r.token,nick:r.nick,email:em};S.fam=r.fam||S.fam;save();show();flush()}else say('m2',r&&r.locked?'Too many tries. Please wait 15 minutes.':'That did not work. Check the code, or request a new one.')})}
+else if(a=='out'){S.auth=null;S.q=[];save();show()}
+else if(a=='fb'){if(!S.auth)return;if(!rate){say('fbm','Please pick a rating from 1 to 5.');return}ev({type:'feedback',rating:rate,comment:document.getElementById('fbt').value.slice(0,500)});rate=0;show();say('fbm','Thank you!')}});
+window.addEventListener('online',flush);setInterval(flush,60000);flush();
 show();
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}
 </script></body></html>

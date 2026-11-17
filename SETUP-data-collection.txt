@@ -1,0 +1,49 @@
+MISSION GREEN: EMAIL LOGIN + USAGE DATA IN GOOGLE SHEETS
+========================================================
+How it works
+- A parent enters their email on the Me tab. The app asks your Google script to email an 8-character login code.
+- The parent types the code to sign in. After that, habit taps and feedback upload to your Sheet. Only signed-in users can add data.
+- Your Sheet has two tabs: Users (emails, nicknames, hashed codes) and Events (usage and feedback).
+
+BEFORE YOU START: choose the sending account
+- Emails are sent from the Google account that deploys the script. Use a dedicated project Gmail (for example missiongreen.team@gmail.com) so no personal account is exposed.
+- Limits: a free Gmail can send about 100 emails a day, Google Workspace about 1,500. For 50+ families, ask them to request codes over a few days, or use a Workspace account.
+
+PART 1: Sheet and collector (about 20 minutes)
+1. Signed in to the project Gmail, go to sheets.google.com and create a blank sheet named "Mission Green Data".
+2. Extensions > Apps Script. Delete the sample code, paste ALL of apps-script-collector.js, and click Save.
+3. Deploy > New deployment > gear icon > Web app.
+   Execute as: Me.  Who has access: Anyone.  Click Deploy.
+4. Click Authorize access. It will ask for permission to send email and edit the spreadsheet. If Google warns "unverified", click Advanced > Go to project (unsafe). This is your own script.
+5. Copy the Web app URL (https://script.google.com/macros/s/.../exec).
+6. Test: open the URL in a browser. It should say: Mission Green collector is running.
+
+PART 2: Connect the app
+1. Open index.html in a text editor. Near the top, replace PASTE_YOUR_WEB_APP_URL_HERE with your Web app URL. Keep the quotes.
+2. Upload index.html and sw.js to GitHub, replacing the old ones. Wait 1 to 2 minutes.
+3. Close and reopen the app on your phone (twice if it still looks old).
+
+PART 3: Test with your own email
+1. Me tab: enter your email, a nickname, tick the agreement, tap "Email me a login code".
+2. Find the email (check spam), enter the code under "Sign in".
+3. Log a habit on the Habits tab. Send feedback. Check the Events tab in your Sheet within a minute.
+
+PART 4: Roll out
+- Send families the app link and a short note: what is collected (nickname, habit taps, feedback), why, and that the email is used only for login codes.
+- Lost code? They tap "Email me a login code" again. A new code replaces the old one.
+- Optional group code: use it to tag a class or team, such as SILAMBU or TEAM1.
+
+PART 5: Use the data for the presentation
+- Do NOT share the whole spreadsheet. The Users tab holds parent emails. Copy the Events tab into a new sheet for the kids to analyze.
+- Insert > Pivot table: rows = User ID, columns = Type, values = count. Shows activity per user.
+- Chart habits logged per day and the most-logged habits. Average the Rating column and read the Comments.
+- Present: what we learned, what we changed, what is next.
+
+CHANGING THE SCRIPT LATER
+After editing code, choose Deploy > Manage deployments > pencil icon > Version: New version > Deploy. The URL stays the same.
+
+SECURITY AND PRIVACY NOTES
+- Codes are stored only as hashes. Five wrong tries locks that email for 15 minutes. One code email per 2 minutes per address.
+- To sign everyone out at once: Apps Script > Project Settings > Script properties > delete SECRET. Everyone then requests new codes.
+- When the project ends, delete the Users tab and tell families.
+- If a family asks you to delete their data, delete their rows in both tabs.
