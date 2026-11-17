@@ -69,7 +69,7 @@ function toggle(id){var k=td(),a=S.logs[k]||[],i=a.indexOf(id);if(i<0)a.push(id)
 function ring(p){var c=251.3;return '<svg width="96" height="96" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="var(--gl)" stroke-width="10"/><circle cx="50" cy="50" r="40" fill="none" stroke="var(--g)" stroke-width="10" stroke-linecap="round" stroke-dasharray="'+c+'" stroke-dashoffset="'+(c*(1-p))+'" transform="rotate(-90 50 50)"/><text x="50" y="56" text-anchor="middle" font-size="20" font-weight="700" fill="var(--ink)">'+Math.round(p*100)+'%</text></svg>'}
 function bars(){var h='<div class="bars">',d=new Date(),dn=['Su','Mo','Tu','We','Th','Fr','Sa'];for(var i=6;i>=0;i--){var x=ad(d,-i),c=cnt(fmt(x));h+='<div><i style="height:'+Math.min(c,5)*14+'px"></i>'+dn[x.getDay()]+'</div>'}return h+'</div>'}
 function home(){var p=Math.min(1,wk()/S.goal),t=cnt(td()),s=streak();
-return '<h1>Hello! 🌿</h1><p class="mut">Small actions, big impact.</p>'+(S.auth?'':'<div class="card"><b>Join the pilot</b><p class="mut">Sign in on the Me tab to share your progress and feedback.</p></div>')+
+return '<h1>Hello! 🌿</h1><p class="mut">Small actions, big impact.</p>'+
 '<div class="card row sp"><div><b>'+(t?'Keep going!':'Start today!')+'</b><p class="mut">'+t+' action'+(t==1?'':'s')+' logged today</p></div><div style="text-align:center"><div class="big">🔥 '+s+'</div><div class="mut">Day streak</div></div></div>'+
 '<h2>Streak chart</h2><div class="card">'+bars()+'<p class="mut">Actions per day, last 7 days</p></div>'+
 '<h2>Your progress</h2><div class="card row">'+ring(p)+'<div><b>'+wk()+' of '+S.goal+' actions this week</b><p class="mut">Weekly goal. Change it in Habits.</p></div></div>'+
@@ -90,12 +90,12 @@ function flush(){if(ENDPOINT.indexOf('http')!=0||!S.auth||!S.q.length||flushing)
 function inp(id,ph,v,t){return '<p><input id="'+id+'" type="'+(t||'text')+'" placeholder="'+ph+'" value="'+esc(v||'')+'" style="width:100%"></p>'}
 function me(){var on=ENDPOINT.indexOf('http')==0,h='<h1>Me</h1>';
 if(S.auth){h+='<div class="card"><b>Signed in</b><p class="mut">'+esc(S.auth.nick)+' ('+esc(S.auth.email||'')+')</p><button class="ghost" data-a="out">Sign out</button></div><div class="card"><b>How is the app working for you?</b><div class="row" id="rt5" style="margin:10px 0">'+[1,2,3,4,5].map(function(n){return '<button class="chk" data-a="rate" data-id="'+n+'">'+n+'</button>'}).join('')+'</div><p class="mut">1 = needs work, 5 = great</p><textarea id="fbt" rows="3" placeholder="What did you like? What should we change?" style="width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--mut);background:var(--card);color:var(--ink)"></textarea><p><button data-a="fb">Send feedback</button> <span id="fbm" class="mut"></span></p></div><p class="mut">Sync: '+(on?'connected':'not connected yet')+'. Waiting to upload: '+S.q.length+'.</p>';return h}
-h+='<p class="mut">Join our pilot to share progress and feedback. The app works without signing in.</p>';
+h+='<p class="mut">Welcome to Mission Green! Please sign in to start. New here? Get a login code first.</p>';
 h+='<div class="card"><b>1. Get a login code</b><p class="mut">Parents: enter your email and we will send a code. Please use a nickname for your child, not a real name.</p>'+inp('em','Parent email','','email')+inp('nk','Nickname','')+inp('fm','Group code (optional)',S.fam)+'<label style="display:flex;gap:10px;align-items:flex-start;margin:10px 0"><input type="checkbox" id="cons" style="width:22px;height:22px;flex:none"><span class="mut">I am the parent and I agree to share habit activity and feedback with the Mission Green team. My email is used only to send login codes. No real names, locations or phone numbers are collected.</span></label><button data-a="req">Email me a login code</button><p id="m1" class="mut"></p></div>';
 h+='<div class="card"><b>2. Sign in</b>'+inp('em2','Parent email','','email')+'<p><input id="cd" placeholder="Login code" autocapitalize="characters" style="width:100%;text-transform:uppercase"></p><button data-a="login">Sign in</button><p id="m2" class="mut"></p></div>';
 return h}
-function show(){var V={home:home,habits:habits,chal:chal,rew:rew,impact:impact,me:me};document.getElementById('v').innerHTML=V[tab]();
-var T=[['home','🏠','Home'],['habits','✅','Habits'],['chal','🎯','Challenges'],['rew','🏆','Rewards'],['impact','🌍','Impact'],['me','👤','Me']];
+function show(){if(!S.auth)tab='me';var V={home:home,habits:habits,chal:chal,rew:rew,impact:impact,me:me};document.getElementById('v').innerHTML=V[tab]();
+var T=[['home','🏠','Home'],['habits','✅','Habits'],['chal','🎯','Challenges'],['rew','🏆','Rewards'],['impact','🌍','Impact'],['me','👤','Me']];if(!S.auth)T=T.filter(function(t){return t[0]=='me'});
 document.getElementById('n').innerHTML=T.map(function(t){return '<button data-a="tab" data-id="'+t[0]+'" class="'+(tab==t[0]?'on':'')+'"><span>'+t[1]+'</span>'+t[2]+'</button>'}).join('')}
 function demo(){S.logs={};S.goal=24;var A=HAB.map(function(h){return h.id});for(var i=0;i<12;i++){var n=i%2?2:3,a=[];for(var j=0;j<n;j++)a.push(A[(i+j)%A.length]);S.logs[fmt(ad(new Date(),-i))]=a}save();show()}
 document.addEventListener('click',function(e){var b=e.target.closest('[data-a]');if(!b)return;var a=b.dataset.a,id=b.dataset.id;
@@ -116,8 +116,8 @@ if(!document.getElementById('cons').checked){say('m1','Please tick the parent ag
 S.fam=fm;save();say('m1','Sending...');
 post({a:'request',email:em,nick:nk,fam:fm,consent:true},function(r){if(r&&r.ok){say('m1','If that email is valid, a code is on its way. Check your inbox and spam folder.');var x=document.getElementById('em2');if(x)x.value=em}else say('m1',r&&r.busy?'We are busy. Please try again tomorrow.':'Something went wrong. Please check the email and try again.')})}
 else if(a=='login'){var em=val('em2').toLowerCase(),cd=val('cd');if(!em||!cd){say('m2','Enter your email and code.');return}say('m2','Signing in...');
-post({a:'login',email:em,code:cd},function(r){if(r&&r.ok){S.auth={uid:r.uid,token:r.token,nick:r.nick,email:em};S.fam=r.fam||S.fam;save();show();flush()}else say('m2',r&&r.locked?'Too many tries. Please wait 15 minutes.':'That did not work. Check the code, or request a new one.')})}
-else if(a=='out'){S.auth=null;S.q=[];save();show()}
+post({a:'login',email:em,code:cd},function(r){if(r&&r.ok){S.auth={uid:r.uid,token:r.token,nick:r.nick,email:em};S.fam=r.fam||S.fam;tab='home';save();show();flush();window.scrollTo(0,0)}else say('m2',r&&r.locked?'Too many tries. Please wait 15 minutes.':'That did not work. Check the code, or request a new one.')})}
+else if(a=='out'){S.auth=null;S.q=[];tab='me';save();show()}
 else if(a=='fb'){if(!S.auth)return;if(!rate){say('fbm','Please pick a rating from 1 to 5.');return}ev({type:'feedback',rating:rate,comment:document.getElementById('fbt').value.slice(0,500)});rate=0;show();say('fbm','Thank you!')}});
 window.addEventListener('online',flush);setInterval(flush,60000);flush();
 show();
