@@ -26,7 +26,7 @@ nav button{flex:1;max-width:80px;background:none;color:var(--mut);padding:6px 2p
 </style></head><body><main id="v"></main>
 <nav id="n"></nav>
 <script>
-var ENDPOINT='https://script.google.com/macros/s/AKfycbyOzflmTFIsNgLjo9l3Grvn683ZwfqHXDwlCfDuJPKD4kBxYEk-8lyIzcDvpm2Cr_yV4w/exec';
+var ENDPOINT='PASTE_YOUR_WEB_APP_URL_HERE';
 var K='mission-green-v1',tab='home',S=load(),flushing=false,rate=0;
 S.q=S.q||[];S.auth=S.auth||null;S.nick=S.nick||'';S.fam=S.fam||'';S.consent=S.consent||false;S.uid=S.uid||('u'+Math.random().toString(36).slice(2,10));
 var HAB=[
@@ -65,7 +65,7 @@ function best(){var ks=Object.keys(S.logs).filter(function(k){return cnt(k)}).so
 function lvl(){return Math.floor(tot()*10/100)+1}
 function imp(){var r={co2:0,w:0,e:0,x:0};var A=all();for(var k in S.logs)S.logs[k].forEach(function(id){var h=A.filter(function(a){return a.id==id})[0];if(h){r.co2+=h.co2;r.w+=h.w;r.e+=h.e;r.x+=h.x}});r.trees=r.co2/21;return r}
 function f1(n){return Math.round(n*10)/10}
-function toggle(id){var k=td(),a=S.logs[k]||[],i=a.indexOf(id);if(i<0)a.push(id);else a.splice(i,1);S.logs[k]=a;if(!a.length)delete S.logs[k];ev({type:'habit',habit:id,action:i<0?'done':'undo'});save();show()}
+function chg(id,d){var k=td(),a=S.logs[k]||[];if(d>0)a.push(id);else{var i=a.lastIndexOf(id);if(i<0)return;a.splice(i,1)}S.logs[k]=a;if(!a.length)delete S.logs[k];ev({type:'habit',habit:id,action:d>0?'done':'undo'});save();show()}
 function ring(p){var c=251.3;return '<svg width="96" height="96" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="var(--gl)" stroke-width="10"/><circle cx="50" cy="50" r="40" fill="none" stroke="var(--g)" stroke-width="10" stroke-linecap="round" stroke-dasharray="'+c+'" stroke-dashoffset="'+(c*(1-p))+'" transform="rotate(-90 50 50)"/><text x="50" y="56" text-anchor="middle" font-size="20" font-weight="700" fill="var(--ink)">'+Math.round(p*100)+'%</text></svg>'}
 function bars(){var h='<div class="bars">',d=new Date(),dn=['Su','Mo','Tu','We','Th','Fr','Sa'];for(var i=6;i>=0;i--){var x=ad(d,-i),c=cnt(fmt(x));h+='<div><i style="height:'+Math.min(c,5)*14+'px"></i>'+dn[x.getDay()]+'</div>'}return h+'</div>'}
 function home(){var p=Math.min(1,wk()/S.goal),t=cnt(td()),s=streak();
@@ -75,8 +75,8 @@ return '<h1>Hello! 🌿</h1><p class="mut">Small actions, big impact.</p>'+
 '<h2>Your progress</h2><div class="card row">'+ring(p)+'<div><b>'+wk()+' of '+S.goal+' actions this week</b><p class="mut">Weekly goal. Change it in Habits.</p></div></div>'+
 '<h2>Reminders</h2><div class="card"><div class="row sp"><b>Daily push reminder</b><button class="'+(S.rem.on?'':'ghost')+'" data-a="rem">'+(S.rem.on?'On':'Off')+'</button></div><div class="row" style="margin-top:8px"><input type="time" id="rt" value="'+S.rem.time+'"><span class="mut">Choose reusable over single-use. Small choices, big change!</span></div><p class="mut">Notifications show while the app is open in this demo.</p></div>'+
 '<div class="row" style="margin-top:16px"><button class="ghost" data-a="demo">Load demo data</button><button class="ghost" data-a="clear">Clear all data</button></div>'}
-function habits(){var h='<h1>Habit tracker</h1><p class="mut">Tap the circle when you do a habit today.</p>',A=all(),l=S.logs[td()]||[];
-A.forEach(function(a){var on=l.indexOf(a.id)>=0;h+='<div class="card row"><button class="chk '+(on?'on':'')+'" data-a="tg" data-id="'+a.id+'">'+(on?'✓':a.i||'🌿')+'</button><div><b>'+esc(a.n)+'</b><p class="mut">Done '+byHab(a.id)+' times</p></div></div>'});
+function habits(){var h='<h1>Habit tracker</h1><p class="mut">Tap + each time you do a habit. Tap − to undo one.</p>',A=all(),l=S.logs[td()]||[];
+A.forEach(function(a){var n=l.filter(function(x){return x==a.id}).length;h+='<div class="card row"><span style="font-size:30px">'+(a.i||'🌿')+'</span><div style="flex:1;min-width:0"><b>'+esc(a.n)+'</b><p class="mut">Today: '+n+' · All time: '+byHab(a.id)+'</p></div><button class="chk" data-a="dec" data-id="'+a.id+'" aria-label="Remove one">−</button><button class="chk on" data-a="tg" data-id="'+a.id+'" aria-label="Add one">+</button></div>'});
 return h+'<h2>Set a weekly goal</h2><div class="card row"><select id="gs">'+[10,15,20,25,30].map(function(g){return '<option'+(g==S.goal?' selected':'')+'>'+g+'</option>'}).join('')+'</select><span>actions per week</span></div><h2>Add your own habit</h2><div class="card row"><input id="nh" placeholder="e.g. Compost food scraps" style="flex:1"><button data-a="add">Add</button></div>'}
 function chal(){var h='<h1>Challenges</h1><p class="mut">Daily, weekly, monthly and group.</p>';
 CH.forEach(function(c){var j=S.joined.indexOf(c.id)>=0,v=Math.min(c.tg,c.f());h+='<div class="card"><div class="row sp"><span class="tag">'+c.t+'</span><button class="'+(j?'ghost':'')+'" data-a="join" data-id="'+c.id+'">'+(j?'Joined':'Join')+'</button></div><p><b>'+c.n+'</b></p>'+(j?'<div class="bar"><b style="width:'+(v/c.tg*100)+'%"></b></div><p class="mut">'+v+' / '+c.tg+(v>=c.tg?' Complete! 🎉':'')+'</p>':'')+'</div>'});
@@ -99,7 +99,7 @@ var T=[['home','🏠','Home'],['habits','✅','Habits'],['chal','🎯','Challeng
 document.getElementById('n').innerHTML=T.map(function(t){return '<button data-a="tab" data-id="'+t[0]+'" class="'+(tab==t[0]?'on':'')+'"><span>'+t[1]+'</span>'+t[2]+'</button>'}).join('')}
 function demo(){S.logs={};S.goal=24;var A=HAB.map(function(h){return h.id});for(var i=0;i<12;i++){var n=i%2?2:3,a=[];for(var j=0;j<n;j++)a.push(A[(i+j)%A.length]);S.logs[fmt(ad(new Date(),-i))]=a}save();show()}
 document.addEventListener('click',function(e){var b=e.target.closest('[data-a]');if(!b)return;var a=b.dataset.a,id=b.dataset.id;
-if(a=='tab'){tab=id;show();window.scrollTo(0,0)}else if(a=='tg')toggle(id);else if(a=='demo')demo();else if(a=='clear'){S.logs={};S.goal=20;S.joined=[];S.custom=[];save();show()}
+if(a=='tab'){tab=id;show();window.scrollTo(0,0)}else if(a=='tg')chg(id,1);else if(a=='dec')chg(id,-1);else if(a=='demo')demo();else if(a=='clear'){S.logs={};S.goal=20;S.joined=[];S.custom=[];save();show()}
 else if(a=='join'){var i=S.joined.indexOf(id);if(i<0)S.joined.push(id);else S.joined.splice(i,1);save();show()}
 else if(a=='add'){var v=document.getElementById('nh').value.trim();if(v){S.custom.push({id:'c'+Date.now(),n:v,i:'🌿',co2:.1,w:0,e:0,x:0});save();show()}}
 else if(a=='rem'){S.rem.on=!S.rem.on;if(S.rem.on){try{Notification.requestPermission()}catch(x){}}save();show()}});
