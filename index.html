@@ -28,7 +28,7 @@ nav button{flex:1;max-width:80px;background:none;color:var(--mut);padding:6px 2p
 <script>
 var ENDPOINT='https://script.google.com/macros/s/AKfycbyOzflmTFIsNgLjo9l3Grvn683ZwfqHXDwlCfDuJPKD4kBxYEk-8lyIzcDvpm2Cr_yV4w/exec';
 var K='mission-green-v1',tab='home',S=load(),flushing=false,rate=0;
-S.q=S.q||[];S.auth=S.auth||null;S.nick=S.nick||'';S.fam=S.fam||'';S.consent=S.consent||false;S.uid=S.uid||('u'+Math.random().toString(36).slice(2,10));
+S.q=S.q||[];S.auth=S.auth||null;S.cdone=S.cdone||{};S.nick=S.nick||'';S.fam=S.fam||'';S.consent=S.consent||false;S.uid=S.uid||('u'+Math.random().toString(36).slice(2,10));
 var HAB=[
 {id:'bottle',n:'Use a reusable bottle',i:'🥤',co2:.08,w:0,e:0,x:.05},
 {id:'recycle',n:'Recycle waste',i:'♻️',co2:.3,w:0,e:0,x:.5},
@@ -65,7 +65,7 @@ function best(){var ks=Object.keys(S.logs).filter(function(k){return cnt(k)}).so
 function lvl(){return Math.floor(tot()*10/100)+1}
 function imp(){var r={co2:0,w:0,e:0,x:0};var A=all();for(var k in S.logs)S.logs[k].forEach(function(id){var h=A.filter(function(a){return a.id==id})[0];if(h){r.co2+=h.co2;r.w+=h.w;r.e+=h.e;r.x+=h.x}});r.trees=r.co2/21;return r}
 function f1(n){return Math.round(n*10)/10}
-function chg(id,d){var k=td(),a=S.logs[k]||[];if(d>0)a.push(id);else{var i=a.lastIndexOf(id);if(i<0)return;a.splice(i,1)}S.logs[k]=a;if(!a.length)delete S.logs[k];ev({type:'habit',habit:id,action:d>0?'done':'undo'});save();show()}
+function chg(id,d){var k=td(),a=S.logs[k]||[];if(d>0)a.push(id);else{var i=a.lastIndexOf(id);if(i<0)return;a.splice(i,1)}S.logs[k]=a;if(!a.length)delete S.logs[k];ev({type:'habit',habit:id,action:d>0?'done':'undo'});chkCh();save();show()}
 function ring(p){var c=251.3;return '<svg width="96" height="96" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="var(--gl)" stroke-width="10"/><circle cx="50" cy="50" r="40" fill="none" stroke="var(--g)" stroke-width="10" stroke-linecap="round" stroke-dasharray="'+c+'" stroke-dashoffset="'+(c*(1-p))+'" transform="rotate(-90 50 50)"/><text x="50" y="56" text-anchor="middle" font-size="20" font-weight="700" fill="var(--ink)">'+Math.round(p*100)+'%</text></svg>'}
 function bars(){var h='<div class="bars">',d=new Date(),dn=['Su','Mo','Tu','We','Th','Fr','Sa'];for(var i=6;i>=0;i--){var x=ad(d,-i),c=cnt(fmt(x));h+='<div><i style="height:'+Math.min(c,5)*14+'px"></i>'+dn[x.getDay()]+'</div>'}return h+'</div>'}
 function home(){var p=Math.min(1,wk()/S.goal),t=cnt(td()),s=streak();
@@ -87,14 +87,18 @@ function impact(){var r=imp();return '<h1>Impact dashboard</h1><p class="mut">Yo
 function post(o,cb){try{fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(o)}).then(function(r){return r.json()}).then(cb).catch(function(){cb(null)})}catch(x){cb(null)}}
 function ev(o){if(!S.auth)return;o.nick=S.auth.nick;o.fam=S.fam;o.date=td();o.ts=new Date().toISOString();S.q.push(o);save();flush()}
 function flush(){if(ENDPOINT.indexOf('http')!=0||!S.auth||!S.q.length||flushing)return;flushing=true;var b=S.q.slice();post({a:'events',uid:S.auth.uid,token:S.auth.token,events:b},function(r){flushing=false;if(r&&r.ok){S.q=S.q.slice(b.length);save();if(tab=='me')show()}else if(r&&r.auth){S.auth=null;save();if(tab=='me')show()}})}
+function ckey(id,d){if(id=='d3')return d;if(id=='w15')return ''+Math.floor(Date.parse(d+'T00:00:00Z')/864e5/7);if(id=='m60')return d.slice(0,7);return 'all'}
+function chkCh(){CH.forEach(function(c){if(S.joined.indexOf(c.id)<0)return;if(c.f()>=c.tg){var k=c.id+'|'+ckey(c.id,td());if(!S.cdone[k]){S.cdone[k]=1;ev({type:'challenge',habit:c.id,action:'complete'})}}})}
 var lastPull=0;
 function pull(manual){if(ENDPOINT.indexOf('http')!=0||!S.auth||flushing)return;if(!manual&&Date.now()-lastPull<30000)return;lastPull=Date.now();
 post({a:'history',uid:S.auth.uid,token:S.auth.token},function(r){if(!r||!r.ok){if(r&&r.auth){S.auth=null;save();show()}else if(manual)say('sm','Could not sync. Try again.');return}
-var m={},cu={};r.rows.forEach(function(x){if(x[3]=='habit'){var k=x[0]+'|'+x[1];m[k]=(m[k]||0)+(x[2]=='done'?1:-1)}else if(x[3]=='custom'&&x[1])cu[x[1]]=x[4]});
+var m={},cu={},st={};r.rows.forEach(function(x){if(x[3]=='challenge'){if(x[2]=='complete')S.cdone[x[1]+'|'+ckey(x[1],x[0])]=1;else st[x[1]]=(x[2]=='join')}else if(x[3]=='habit'){var k=x[0]+'|'+x[1];m[k]=(m[k]||0)+(x[2]=='done'?1:-1)}else if(x[3]=='custom'&&x[1])cu[x[1]]=x[4]});
 S.q.forEach(function(x){if(x.type=='habit'){var k=x.date+'|'+x.habit;if(k in m)m[k]+=(x.action=='done'?1:-1)}});
 for(var k in m){var p=k.split('|'),d=p[0],id=p[1],n=Math.max(0,m[k]),a=(S.logs[d]||[]).filter(function(h){return h!=id});for(var i=0;i<n;i++)a.push(id);if(a.length)S.logs[d]=a;else delete S.logs[d]}
 for(var id in cu)if(!all().some(function(h){return h.id==id}))S.custom.push({id:id,n:cu[id],i:'🌿',co2:.1,w:0,e:0,x:0});
-save();if(manual||tab!='me')show();if(manual)say('sm','Synced.')})}
+for(var cid in st){var ji=S.joined.indexOf(cid);if(st[cid]&&ji<0)S.joined.push(cid);else if(!st[cid]&&ji>=0)S.joined.splice(ji,1)}
+S.joined.slice().forEach(function(cid){if(!(cid in st))ev({type:'challenge',habit:cid,action:'join'})});
+chkCh();save();if(manual||tab!='me')show();if(manual)say('sm','Synced.')})}
 function inp(id,ph,v,t){return '<p><input id="'+id+'" type="'+(t||'text')+'" placeholder="'+ph+'" value="'+esc(v||'')+'" style="width:100%"></p>'}
 function me(){var on=ENDPOINT.indexOf('http')==0,h='<h1>Me</h1>';
 if(S.auth){h+='<div class="card"><b>Signed in</b><p class="mut">'+esc(S.auth.nick)+' ('+esc(S.auth.email||'')+')</p><button class="ghost" data-a="sync">Sync now</button> <button class="ghost" data-a="out">Sign out</button> <span id="sm" class="mut"></span></div><div class="card"><b>How is the app working for you?</b><div class="row" id="rt5" style="margin:10px 0">'+[1,2,3,4,5].map(function(n){return '<button class="chk" data-a="rate" data-id="'+n+'">'+n+'</button>'}).join('')+'</div><p class="mut">1 = needs work, 5 = great</p><textarea id="fbt" rows="3" placeholder="What did you like? What should we change?" style="width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--mut);background:var(--card);color:var(--ink)"></textarea><p><button data-a="fb">Send feedback</button> <span id="fbm" class="mut"></span></p></div><p class="mut">Sync: '+(on?'connected':'not connected yet')+'. Waiting to upload: '+S.q.length+'.</p>';return h}
@@ -108,7 +112,7 @@ document.getElementById('n').innerHTML=T.map(function(t){return '<button data-a=
 function demo(){S.logs={};S.goal=24;var A=HAB.map(function(h){return h.id});for(var i=0;i<12;i++){var n=i%2?2:3,a=[];for(var j=0;j<n;j++)a.push(A[(i+j)%A.length]);S.logs[fmt(ad(new Date(),-i))]=a}save();show()}
 document.addEventListener('click',function(e){var b=e.target.closest('[data-a]');if(!b)return;var a=b.dataset.a,id=b.dataset.id;
 if(a=='tab'){tab=id;show();window.scrollTo(0,0)}else if(a=='tg')chg(id,1);else if(a=='dec')chg(id,-1);else if(a=='demo')demo();else if(a=='clear'){S.logs={};S.goal=20;S.joined=[];S.custom=[];save();show()}
-else if(a=='join'){var i=S.joined.indexOf(id);if(i<0)S.joined.push(id);else S.joined.splice(i,1);save();show()}
+else if(a=='join'){var i=S.joined.indexOf(id);if(i<0)S.joined.push(id);else S.joined.splice(i,1);ev({type:'challenge',habit:id,action:i<0?'join':'leave'});chkCh();save();show()}
 else if(a=='add'){var v=document.getElementById('nh').value.trim();if(v){var cid='c'+Date.now();S.custom.push({id:cid,n:v,i:'🌿',co2:.1,w:0,e:0,x:0});ev({type:'custom',habit:cid,comment:v});save();show()}}
 else if(a=='rem'){S.rem.on=!S.rem.on;if(S.rem.on){try{Notification.requestPermission()}catch(x){}}save();show()}});
 document.addEventListener('change',function(e){if(e.target.id=='gs'){S.goal=+e.target.value;save();show()}if(e.target.id=='rt'){S.rem.time=e.target.value;save()}});
