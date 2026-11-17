@@ -23,11 +23,12 @@ nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);display:flex;j
 nav button{flex:1;max-width:80px;background:none;color:var(--mut);padding:6px 2px;font-size:12px}nav button.on{color:var(--g);font-weight:700}nav span{display:block;font-size:22px}
 .badge{text-align:center;padding:12px 6px;border-radius:14px;background:var(--gl)}.badge.off{opacity:.4;filter:grayscale(1)}.badge span{font-size:34px;display:block}
 .tag{font-size:12px;background:var(--a);color:#0f2a22;border-radius:8px;padding:2px 8px}
+button.ghost.sel{background:var(--g);color:#fff}
 </style></head><body><main id="v"></main>
 <nav id="n"></nav>
 <script>
 var ENDPOINT='https://script.google.com/macros/s/AKfycbyOzflmTFIsNgLjo9l3Grvn683ZwfqHXDwlCfDuJPKD4kBxYEk-8lyIzcDvpm2Cr_yV4w/exec';
-var K='mission-green-v1',tab='home',S=load(),flushing=false,rate=0;
+var K='mission-green-v1',tab='home',S=load(),flushing=false,rate=0,ease=0,recm='';
 S.q=S.q||[];S.auth=S.auth||null;S.cdone=S.cdone||{};S.nick=S.nick||'';S.fam=S.fam||'';S.consent=S.consent||false;S.uid=S.uid||('u'+Math.random().toString(36).slice(2,10));
 var HAB=[
 {id:'bottle',n:'Use a reusable bottle',i:'🥤',co2:.08,w:0,e:0,x:.05},
@@ -99,9 +100,11 @@ for(var id in cu)if(!all().some(function(h){return h.id==id}))S.custom.push({id:
 for(var cid in st){var ji=S.joined.indexOf(cid);if(st[cid]&&ji<0)S.joined.push(cid);else if(!st[cid]&&ji>=0)S.joined.splice(ji,1)}
 S.joined.slice().forEach(function(cid){if(!(cid in st))ev({type:'challenge',habit:cid,action:'join'})});
 chkCh();save();if(manual||tab!='me')show();if(manual)say('sm','Synced.')})}
+var FEAT=['Streak chart','Progress tracker','Habit tracker','Challenges','Rewards','Reminders','Impact dashboard'];
+function sc(g){return [1,2,3,4,5].map(function(n){return '<button class="chk" data-a="rate" data-g="'+g+'" data-id="'+n+'">'+n+'</button>'}).join('')}
 function inp(id,ph,v,t){return '<p><input id="'+id+'" type="'+(t||'text')+'" placeholder="'+ph+'" value="'+esc(v||'')+'" style="width:100%"></p>'}
 function me(){var on=ENDPOINT.indexOf('http')==0,h='<h1>Me</h1>';
-if(S.auth){h+='<div class="card"><b>Signed in</b><p class="mut">'+esc(S.auth.nick)+' ('+esc(S.auth.email||'')+')</p><button class="ghost" data-a="sync">Sync now</button> <button class="ghost" data-a="out">Sign out</button> <span id="sm" class="mut"></span></div><div class="card"><b>How is the app working for you?</b><div class="row" id="rt5" style="margin:10px 0">'+[1,2,3,4,5].map(function(n){return '<button class="chk" data-a="rate" data-id="'+n+'">'+n+'</button>'}).join('')+'</div><p class="mut">1 = needs work, 5 = great</p><textarea id="fbt" rows="3" placeholder="What did you like? What should we change?" style="width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--mut);background:var(--card);color:var(--ink)"></textarea><p><button data-a="fb">Send feedback</button> <span id="fbm" class="mut"></span></p></div><p class="mut">Sync: '+(on?'connected':'not connected yet')+'. Waiting to upload: '+S.q.length+'.</p>';return h}
+if(S.auth){h+='<div class="card"><b>Signed in</b><p class="mut">'+esc(S.auth.nick)+' ('+esc(S.auth.email||'')+')</p><button class="ghost" data-a="sync">Sync now</button> <button class="ghost" data-a="out">Sign out</button> <span id="sm" class="mut"></span></div><div class="card"><b>Tell us what you think</b><p class="mut">Overall, how is the app working? (1 = needs work, 5 = great)</p><div class="row" id="rt5" style="margin:10px 0">'+sc('o')+'</div><p class="mut">How easy is the app to use? (1 = hard, 5 = very easy)</p><div class="row" id="rt5e" style="margin:10px 0">'+sc('e')+'</div><p class="mut">Which feature do you like most?</p><p><select id="fav" style="width:100%"><option value="">Choose one</option>'+FEAT.map(function(f){return '<option>'+f+'</option>'}).join('')+'</select></p><p class="mut">Would you recommend this app to others?</p><div class="row" id="recs" style="margin:10px 0">'+['Yes','Maybe','No'].map(function(r){return '<button class="ghost" data-a="rec" data-id="'+r+'">'+r+'</button>'}).join('')+'</div><p class="mut">What improvements would you like to see?</p><textarea id="imp" rows="3" style="width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--mut);background:var(--card);color:var(--ink)"></textarea><p class="mut">Anything else you would like to tell us?</p><textarea id="fbt" rows="2" style="width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--mut);background:var(--card);color:var(--ink)"></textarea><p><button data-a="fb">Send feedback</button> <span id="fbm" class="mut"></span></p></div><p class="mut">Sync: '+(on?'connected':'not connected yet')+'. Waiting to upload: '+S.q.length+'.</p>';return h}
 h+='<p class="mut">Welcome to Mission Green! Please sign in to start. New here? Get a login code first.</p>';
 h+='<div class="card"><b>1. Get a login code</b><p class="mut">Parents: enter your email and we will send a code. Please use a nickname for your child, not a real name.</p>'+inp('em','Parent email','','email')+inp('nk','Nickname','')+inp('fm','Group code (optional)',S.fam)+'<label style="display:flex;gap:10px;align-items:flex-start;margin:10px 0"><input type="checkbox" id="cons" style="width:22px;height:22px;flex:none"><span class="mut">I am the parent and I agree to share habit activity and feedback with the Mission Green team. My email is used only to send login codes. No real names, locations or phone numbers are collected.</span></label><button data-a="req">Email me a login code</button><p id="m1" class="mut"></p></div>';
 h+='<div class="card"><b>2. Sign in</b>'+inp('em2','Parent email','','email')+'<p><input id="cd" placeholder="Login code" autocapitalize="characters" style="width:100%;text-transform:uppercase"></p><button data-a="login">Sign in</button><p id="m2" class="mut"></p></div>';
@@ -120,7 +123,8 @@ setInterval(function(){try{if(!S.rem.on)return;var d=new Date(),hm=('0'+d.getHou
 function val(id){var x=document.getElementById(id);return x?x.value.trim():''}
 function say(id,t){var x=document.getElementById(id);if(x)x.textContent=t}
 document.addEventListener('click',function(e){var b=e.target.closest('[data-a]');if(!b)return;var a=b.dataset.a;
-if(a=='rate'){rate=+b.dataset.id;var q=document.querySelectorAll('#rt5 .chk');for(var i=0;i<q.length;i++)q[i].classList.toggle('on',i<rate)}
+if(a=='rate'){var g=b.dataset.g,v=+b.dataset.id;if(g=='e')ease=v;else rate=v;var q=document.querySelectorAll(g=='e'?'#rt5e .chk':'#rt5 .chk');for(var i=0;i<q.length;i++)q[i].classList.toggle('on',i<v)}
+else if(a=='rec'){recm=b.dataset.id;var q=document.querySelectorAll('#recs button');for(var i=0;i<q.length;i++)q[i].classList.toggle('sel',q[i].dataset.id==recm)}
 else if(a=='req'){var em=val('em').toLowerCase(),nk=val('nk').slice(0,30),fm=val('fm').slice(0,10);
 if(ENDPOINT.indexOf('http')!=0){say('m1','Sign-in is not set up yet.');return}
 if(em.indexOf('@')<1||!nk){say('m1','Please enter a valid email and a nickname.');return}
@@ -131,7 +135,7 @@ else if(a=='login'){var em=val('em2').toLowerCase(),cd=val('cd');if(!em||!cd){sa
 post({a:'login',email:em,code:cd},function(r){if(r&&r.ok){S.auth={uid:r.uid,token:r.token,nick:r.nick,email:em};S.fam=r.fam||S.fam;tab='home';save();show();flush();pull(true);window.scrollTo(0,0)}else say('m2',r&&r.locked?'Too many tries. Please wait 15 minutes.':'That did not work. Check the code, or request a new one.')})}
 else if(a=='sync')pull(true);
 else if(a=='out'){S.auth=null;S.q=[];tab='me';save();show()}
-else if(a=='fb'){if(!S.auth)return;if(!rate){say('fbm','Please pick a rating from 1 to 5.');return}ev({type:'feedback',rating:rate,comment:document.getElementById('fbt').value.slice(0,500)});rate=0;show();say('fbm','Thank you!')}});
+else if(a=='fb'){if(!S.auth)return;var fav=val('fav');if(!rate||!ease||!recm||!fav){say('fbm','Please answer the rating, ease of use, favorite feature and recommend questions.');return}ev({type:'feedback',rating:rate,ease:ease,fav:fav,rec:recm,improve:document.getElementById('imp').value.slice(0,500),comment:document.getElementById('fbt').value.slice(0,500)});rate=0;ease=0;recm='';show();say('fbm','Thank you!')}});
 window.addEventListener('online',flush);setInterval(flush,60000);flush();pull();document.addEventListener('visibilitychange',function(){if(!document.hidden){flush();pull()}});
 show();
 try{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js')}catch(e){}

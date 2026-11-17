@@ -37,6 +37,7 @@ function doPost(e) {
     if (d.a == 'request') out = requestCode(ss, d);
     else if (d.a == 'login') out = login(ss, d);
     else if (d.a == 'events') out = events(ss, d);
+    else if (d.a == 'history') out = history(ss, d);
     else out = { ok: false };
     return json(out);
   } catch (err) {
@@ -98,12 +99,31 @@ function events(ss, d) {
   var data = users(ss).getDataRange().getValues(), found = false;
   for (var i = 1; i < data.length; i++) if (data[i][1] == d.uid) { found = true; break; }
   if (!found) return { ok: false, auth: true };
-  var sh = sheet(ss, EVENTS, ['Received','Timestamp','User ID','Nickname','Group','Type','Habit','Action','Date','Rating','Comment']);
+  var sh = sheet(ss, EVENTS, ['Received','Timestamp','User ID','Nickname','Group','Type','Habit','Action','Date','Rating','Comment','Ease of use','Favorite feature','Recommend','Improvements']);
+  sh.getRange(1, 12, 1, 4).setValues([['Ease of use','Favorite feature','Recommend','Improvements']]);
+  sh.getRange(1, 2, sh.getMaxRows(), 1).setNumberFormat('@');
+  sh.getRange(1, 9, sh.getMaxRows(), 1).setNumberFormat('@');   // keep dates as plain text
   var list = (d.events || []).slice(0, 200), now = new Date();
   var rows = list.map(function (x) {
     return [now, clean(x.ts), clean(d.uid), clean(x.nick), clean(x.fam), clean(x.type), clean(x.habit),
-            clean(x.action), clean(x.date), clean(x.rating), clean(x.comment)];
+            clean(x.action), clean(x.date), clean(x.rating), clean(x.comment),
+            clean(x.ease), clean(x.fav), clean(x.rec), clean(x.improve)];
   });
   if (rows.length) sh.getRange(sh.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
   return { ok: true };
+}
+
+function history(ss, d) {
+  if (!d.uid || d.token != hmac('t:' + d.uid)) return { ok: false, auth: true };
+  var sh = ss.getSheetByName(EVENTS);
+  if (!sh || sh.getLastRow() < 2) return { ok: true, rows: [] };
+  var tz = ss.getSpreadsheetTimeZone();
+  var data = sh.getRange(2, 1, sh.getLastRow() - 1, 11).getValues(), rows = [];
+  for (var i = 0; i < data.length; i++) {
+    var r = data[i];
+    if (r[2] != d.uid || (r[5] != 'habit' && r[5] != 'custom' && r[5] != 'challenge')) continue;
+    var dt = (r[8] instanceof Date) ? Utilities.formatDate(r[8], tz, 'yyyy-MM-dd') : String(r[8]);
+    rows.push([dt, r[6], r[7], r[5], r[10]]);
+  }
+  return { ok: true, rows: rows };
 }
