@@ -1,6 +1,6 @@
 // Mission Green collector with email login codes.
 // Paste into Google Apps Script (Extensions > Apps Script) of your Google Sheet.
-var USERS = 'Users', EVENTS = 'Events';
+var USERS = 'Users', EVENTS = 'Events', ADMINS = 'Admins', DEFAULT_ADMIN = 'morajece@gmail.com';
 
 function clean(v) {
   v = (v === undefined || v === null) ? '' : String(v);
@@ -38,6 +38,7 @@ function doPost(e) {
     else if (d.a == 'login') out = login(ss, d);
     else if (d.a == 'events') out = events(ss, d);
     else if (d.a == 'history') out = history(ss, d);
+    else if (d.a == 'admin') out = adminData(ss, d);
     else out = { ok: false };
     return json(out);
   } catch (err) {
@@ -85,7 +86,7 @@ function login(ss, d) {
     if (u[8] && new Date(u[8]) > new Date()) return { ok: false, locked: true };
     if (u[4] && hmac(email + ':' + code) == u[4]) {
       sh.getRange(row, 8, 1, 2).setValues([[0, '']]);
-      return { ok: true, uid: u[1], nick: u[2], fam: u[3], token: hmac('t:' + u[1]) };
+      return { ok: true, uid: u[1], nick: u[2], fam: u[3], token: hmac('t:' + u[1]), admin: isAdminEmail(ss, email) };
     }
     var f = (Number(u[7]) || 0) + 1, lockNow = f >= 5;
     sh.getRange(row, 8, 1, 2).setValues([[lockNow ? 0 : f, lockNow ? new Date(Date.now() + 15 * 60000) : '']]);
@@ -116,7 +117,7 @@ function events(ss, d) {
 function history(ss, d) {
   if (!d.uid || d.token != hmac('t:' + d.uid)) return { ok: false, auth: true };
   var sh = ss.getSheetByName(EVENTS);
-  if (!sh || sh.getLastRow() < 2) return { ok: true, rows: [] };
+  if (!sh || sh.getLastRow() < 2) return { ok: true, rows: [], admin: isAdminEmail(ss, emailOf(ss, d.uid)) };
   var tz = ss.getSpreadsheetTimeZone();
   var data = sh.getRange(2, 1, sh.getLastRow() - 1, 11).getValues(), rows = [];
   for (var i = 0; i < data.length; i++) {
@@ -125,5 +126,42 @@ function history(ss, d) {
     var dt = (r[8] instanceof Date) ? Utilities.formatDate(r[8], tz, 'yyyy-MM-dd') : String(r[8]);
     rows.push([dt, r[6], r[7], r[5], r[10]]);
   }
-  return { ok: true, rows: rows };
+  return { ok: true, rows: rows, admin: isAdminEmail(ss, emailOf(ss, d.uid)) };
+}
+
+// ---------- Admin ----------
+function adminSheet(ss) {
+  var sh = ss.getSheetByName(ADMINS);
+  if (!sh) { sh = ss.insertSheet(ADMINS); sh.appendRow(['Admin email']); sh.appendRow([DEFAULT_ADMIN]); }
+  return sh;
+}
+function emailOf(ss, uid) {
+  var data = users(ss).getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) if (data[i][1] == uid) return String(data[i][0]).toLowerCase();
+  return '';
+}
+function isAdminEmail(ss, email) {
+  if (!email) return false;
+  var d = adminSheet(ss).getDataRange().getValues();
+  for (var i = 1; i < d.length; i++) if (String(d[i][0]).trim().toLowerCase() == email) return true;
+  return false;
+}
+function adminData(ss, d) {
+  if (!d.uid || d.token != hmac('t:' + d.uid)) return { ok: false, auth: true };
+  if (!isAdminEmail(ss, emailOf(ss, d.uid))) return { ok: false, denied: true };
+  var tz = ss.getSpreadsheetTimeZone(), sh = ss.getSheetByName(EVENTS), fb = [], taps = 0, act = {}, cut = Date.now() - 7 * 864e5;
+  if (sh && sh.getLastRow() > 1) {
+    var data = sh.getRange(2, 1, sh.getLastRow() - 1, 15).getValues();
+    for (var i = 0; i < data.length; i++) {
+      var r = data[i];
+      if (r[0] instanceof Date && r[0].getTime() >= cut) act[r[2]] = 1;
+      if (r[5] == 'habit' && r[7] == 'done') taps++;
+      if (r[5] == 'feedback') {
+        var dt = (r[8] instanceof Date) ? Utilities.formatDate(r[8], tz, 'yyyy-MM-dd') : String(r[8]);
+        fb.push({ date: dt, nick: r[3], fam: r[4], rating: r[9], comment: r[10], ease: r[11], fav: r[12], rec: r[13], improve: r[14] });
+      }
+    }
+  }
+  var nUsers = Math.max(0, users(ss).getLastRow() - 1);
+  return { ok: true, stats: { users: nUsers, taps: taps, active7: Object.keys(act).length, feedback: fb.length }, feedback: fb.reverse().slice(0, 300) };
 }
